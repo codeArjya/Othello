@@ -90,7 +90,7 @@ public class Othello extends JPanel {
                     // Need to manually clone each array for some reason??
                     char[][] carboncopy = new char[board.length][];
                     for (int i = 0; i < board.length; i++) {
-                        board[i] = board[i].clone();
+                        carboncopy[i] = board[i].clone();
                     }
                     getMove(r, c, isMax ? AI : PLAYER);
                     int value = minimax(!isMax, alpha, beta, depth-1);
@@ -127,7 +127,7 @@ public class Othello extends JPanel {
                 if (board[r][c] == EMPTY && isValidMove(r, c, AI)) {
                     char[][] carboncopy = new char[board.length][];
                     for (int i = 0; i < board.length; i++) {
-                        board[i] = board[i].clone();
+                        carboncopy[i] = board[i].clone();
                     }
                     getMove(r, c, AI);
                     int current = minimax(false, Integer.MIN_VALUE, Integer.MAX_VALUE, depth-1);
