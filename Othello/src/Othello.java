@@ -130,7 +130,7 @@ public class Othello extends JPanel {
         return false;
     }
     public int[] AIMove(int depth) {
-        int[] output = { 9, 9 };
+        int[] output = new int[2];
         int best = -1000;
         for (int r = 0; r < gridSize; r++) {
             for (int c = 0; c < gridSize; c++) {
