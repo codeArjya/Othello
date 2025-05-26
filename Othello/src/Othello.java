@@ -11,7 +11,7 @@ public class Othello extends JPanel {
     final int panelSize = boxSize * gridSize;
     char[][] board = new char[gridSize][gridSize];
 
-    public Othello() {
+    public Othello(int depth) {
         setPreferredSize(new Dimension(panelSize, panelSize));
         setUpBoard();
         addMouseListener(new MouseAdapter() {
@@ -21,14 +21,12 @@ public class Othello extends JPanel {
                 if (isValidMove(r, c, PLAYER)) {
                     getMove(r, c, PLAYER);
                     repaint();
-                    if (hasValidMove(AI)) {
-                        // Change depth HERE
-                        int[] aiMove = AIMove(9);
-                        if (aiMove != null) {
-                            getMove(aiMove[0], aiMove[1], AI);
-                            repaint();
-                        }
+                    if (!getAIMove(depth)) {
+                        System.out.println("AI has no moves. Turn passes back to player.");
                     }
+                } else if (!hasValidMove(PLAYER) && hasValidMove(AI)) {
+                    System.out.println("Player has no moves. AI moves automatically.");
+                    getAIMove(9);
                 }
             }
         });
@@ -75,6 +73,7 @@ public class Othello extends JPanel {
         if (depth == 0)
             return evalFunction();
         char eval = evaluate();
+//        System.out.println(eval);
         switch (eval) {
             case PLAYER:
                 return -100;
@@ -119,6 +118,17 @@ public class Othello extends JPanel {
                     if (canFlip(r, c, moveR, moveC, player))
                         flip(r, c, moveR, moveC, player);
     }
+    public boolean getAIMove(int depth) {
+        if (hasValidMove(AI)) {
+            int[] aiMove = AIMove(depth);
+            if (aiMove != null) {
+                getMove(aiMove[0], aiMove[1], AI);
+                repaint();
+                return true;
+            }
+        }
+        return false;
+    }
     public int[] AIMove(int depth) {
         int[] output = { 9, 9 };
         int best = -1000;
@@ -126,9 +136,8 @@ public class Othello extends JPanel {
             for (int c = 0; c < gridSize; c++) {
                 if (board[r][c] == EMPTY && isValidMove(r, c, AI)) {
                     char[][] carboncopy = new char[board.length][];
-                    for (int i = 0; i < board.length; i++) {
+                    for (int i = 0; i < board.length; i++)
                         carboncopy[i] = board[i].clone();
-                    }
                     getMove(r, c, AI);
                     int current = minimax(false, Integer.MIN_VALUE, Integer.MAX_VALUE, depth-1);
                     board = carboncopy;
@@ -143,16 +152,15 @@ public class Othello extends JPanel {
         return output;
     }
     public void flip(int r, int c, int moveR, int moveC, char player) {
-        char ai = (player == PLAYER) ? AI : PLAYER;
+        char enemy = (player == PLAYER) ? AI : PLAYER;
         r += moveR;
         c += moveC;
-        while (r >= 0 && r < gridSize && c >= 0 && c < gridSize && board[r][c] == ai) {
+        while (r >= 0 && r < gridSize && c >= 0 && c < gridSize && board[r][c] == enemy) {
             board[r][c] = player;
             r += moveR;
             c += moveC;
         }
     }
-
 
     // Drawing stuff
     public void paintComponent(Graphics g) {
@@ -191,6 +199,7 @@ public class Othello extends JPanel {
         board[4][4] = AI;
     }
 
+
     // Conditionals
     public boolean isValidMove(int r, int c, char player) {
         if (board[r][c] != EMPTY) return false;
@@ -201,12 +210,12 @@ public class Othello extends JPanel {
         return false;
     }
     public boolean canFlip(int r, int c, int moveR, int moveC, char player) {
-        char ai = (player == PLAYER) ? AI : PLAYER;
+        char enemy = (player == PLAYER) ? AI : PLAYER;
         r += moveR;
         c += moveC;
         boolean foundEnemy = false;
         while (r >= 0 && r < gridSize && c >= 0 && c < gridSize) {
-            if (board[r][c] == ai) {
+            if (board[r][c] == enemy) {
                 foundEnemy = true;
             } else if (board[r][c] == player) {
                 return foundEnemy;
@@ -226,7 +235,5 @@ public class Othello extends JPanel {
         }
         return false;
     }
-
-
 
 }
