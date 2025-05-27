@@ -5,11 +5,40 @@ import java.awt.event.MouseEvent;
 
 public class Othello extends JPanel {
 
-    final char PLAYER = '⚫'; final char AI = '⚪'; final char EMPTY = ' ';
+    final char PLAYER = '⚫';
+    final char AI = '⚪';
+    final char EMPTY = ' ';
     final int gridSize = 8;
     final int boxSize = 100;
     final int panelSize = boxSize * gridSize;
     char[][] board = new char[gridSize][gridSize];
+
+    // the bad spaces result in positions that allow opponent to take without being
+    // able to take back ourselves
+    // forces bad moves and forces less resulting material
+    // THE POSITION WEIGHTS ONLY WORK FOR 8X8 BOARDS, BUT CAN EASILY BE CHANGED TO
+    // ARRAY LIST FOR OTHER SIZES
+    // TODO needs functionality though
+
+    /*
+     * INITIAL PIECES HAVE NO WEIGHT AS THEY ARE ALREADY PLACED
+     * CORNERS ARE THE BEST POSITIONS TO GET: 100
+     * SPACES ADJACENT TO CORNERS ARE BAD TO OBTAIN (DIAGONAL SPACES ARE WORSE): -50
+     * & -20
+     * SPACES ADJACENT TO SIDES ARE BAD AS WELL: -2
+     * SPACES FURTHER FROM CENTER ARE BETTER (AS LONG AS THEY AREN'T ADJACENT TO THE
+     * SIDES OR DIAGONAL TO CORNER): 2 & 1
+     */
+    static final int[][] POSITION_WEIGHTS = {
+            { 100, -20, 10, 5, 5, 10, -20, 100 },
+            { -20, -50, -2, -2, -2, -2, -50, -20 },
+            { 10, -2, 2, 1, 1, 2, -2, 10 },
+            { 5, -2, 1, 0, 0, 1, -2, 5 },
+            { 5, -2, 1, 0, 0, 1, -2, 5 },
+            { 10, -2, 2, 1, 1, 2, -2, 10 },
+            { -20, -50, -2, -2, -2, -2, -50, -20 },
+            { 100, -20, 10, 5, 5, 10, -20, 100 }
+    };
 
     public Othello() {
         setPreferredSize(new Dimension(panelSize, panelSize));
@@ -38,7 +67,7 @@ public class Othello extends JPanel {
     public char evaluate() {
         int playerCount = 0;
         int AICount = 0;
-        for (int r = 0; r < gridSize; r++)// checking if there's any empty spots
+        for (int r = 0; r < gridSize; r++) // checking if there's any empty spots
             for (int c = 0; c < gridSize; c++) {
                 if (board[r][c] == EMPTY)
                     return 'N';
@@ -58,16 +87,28 @@ public class Othello extends JPanel {
 
     // Evaluation Function (to be updated with weights)
     public int evalFunction() {
-        int playerCount = 0;
-        int AICount = 0;
+        int material = 0, position = 0;
         for (int r = 0; r < gridSize; r++)// checking if there's any empty spots
             for (int c = 0; c < gridSize; c++) {
-                if (board[r][c] == PLAYER)
-                    playerCount++;
-                else if (board[r][c] == AI)
-                    AICount++;
+                if (board[r][c] == PLAYER) {
+                    material--;
+                    position -= POSITION_WEIGHTS[r][c];
+                } else if (board[r][c] == AI) {
+                    material++;
+                    position += POSITION_WEIGHTS[r][c];
+                }
             }
-        return AICount - playerCount;
+        int mobility = countLegalMoves(AI) - countLegalMoves(PLAYER);
+        return (10 * material) + position + (5 * mobility);
+    }
+
+    public int countLegalMoves(char player) {
+        int count = 0;
+        for (int r = 0; r < gridSize; r++)
+            for (int c = 0; c < gridSize; c++)
+                if (isValidMove(r, c, player))
+                    count++;
+        return count;
     }
 
     // Minimax
@@ -86,14 +127,14 @@ public class Othello extends JPanel {
         int best = isMax ? -1000 : 1000;
         for (int r = 0; r < gridSize; r++) {
             for (int c = 0; c < gridSize; c++) {
-                if (board[r][c] == EMPTY && isValidMove(r, c, isMax ? AI : PLAYER)) {
+                if (isValidMove(r, c, isMax ? AI : PLAYER)) {
                     // Need to manually clone each array for some reason??
                     char[][] carboncopy = new char[board.length][];
                     for (int i = 0; i < board.length; i++) {
                         carboncopy[i] = board[i].clone();
                     }
                     getMove(r, c, isMax ? AI : PLAYER);
-                    int value = minimax(!isMax, alpha, beta, depth-1);
+                    int value = minimax(!isMax, alpha, beta, depth - 1);
                     board = carboncopy;
                     if (isMax) {
                         best = Math.max(best, value);
@@ -119,18 +160,19 @@ public class Othello extends JPanel {
                     if (canFlip(r, c, moveR, moveC, player))
                         flip(r, c, moveR, moveC, player);
     }
+
     public int[] AIMove(int depth) {
         int[] output = { 9, 9 };
         int best = -1000;
         for (int r = 0; r < gridSize; r++) {
             for (int c = 0; c < gridSize; c++) {
-                if (board[r][c] == EMPTY && isValidMove(r, c, AI)) {
+                if (isValidMove(r, c, AI)) {
                     char[][] carboncopy = new char[board.length][];
                     for (int i = 0; i < board.length; i++) {
                         carboncopy[i] = board[i].clone();
                     }
                     getMove(r, c, AI);
-                    int current = minimax(false, Integer.MIN_VALUE, Integer.MAX_VALUE, depth-1);
+                    int current = minimax(false, Integer.MIN_VALUE, Integer.MAX_VALUE, depth - 1);
                     board = carboncopy;
                     if (current > best) {
                         best = current;
@@ -142,6 +184,7 @@ public class Othello extends JPanel {
         }
         return output;
     }
+
     public void flip(int r, int c, int moveR, int moveC, char player) {
         char ai = (player == PLAYER) ? AI : PLAYER;
         r += moveR;
@@ -152,7 +195,6 @@ public class Othello extends JPanel {
             c += moveC;
         }
     }
-
 
     // Drawing stuff
     public void paintComponent(Graphics g) {
@@ -172,6 +214,7 @@ public class Othello extends JPanel {
             }
         }
     }
+
     public void drawPiece(Graphics g, int r, int c, char player) {
         int x = c * boxSize + 10;
         int y = r * boxSize + 10;
@@ -181,6 +224,7 @@ public class Othello extends JPanel {
         g.setColor(Color.BLACK);
         g.drawOval(x, y, d, d);
     }
+
     public void setUpBoard() {
         for (int r = 0; r < gridSize; r++)
             for (int c = 0; c < gridSize; c++)
@@ -193,13 +237,16 @@ public class Othello extends JPanel {
 
     // Conditionals
     public boolean isValidMove(int r, int c, char player) {
-        if (board[r][c] != EMPTY) return false;
+        if (board[r][c] != EMPTY)
+            return false;
         for (int moveR = -1; moveR <= 1; moveR++)
             for (int moveC = -1; moveC <= 1; moveC++)
                 if (moveR != 0 || moveC != 0)
-                    if (canFlip(r, c, moveR, moveC, player)) return true;
+                    if (canFlip(r, c, moveR, moveC, player))
+                        return true;
         return false;
     }
+
     public boolean canFlip(int r, int c, int moveR, int moveC, char player) {
         char ai = (player == PLAYER) ? AI : PLAYER;
         r += moveR;
@@ -218,15 +265,15 @@ public class Othello extends JPanel {
         }
         return false;
     }
+
     public boolean hasValidMove(char player) {
         for (int r = 0; r < gridSize; r++) {
             for (int c = 0; c < gridSize; c++) {
-                if (isValidMove(r, c, player)) return true;
+                if (isValidMove(r, c, player))
+                    return true;
             }
         }
         return false;
     }
-
-
 
 }
