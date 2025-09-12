@@ -4,10 +4,12 @@ public class OthelloDriver extends JFrame {
 
     public static void main(String[] args) {
         JFrame frame = new JFrame("Othello");
-        Othello game = new Othello();
-        frame.add(game);
-        frame.setSize(game.panelSize + 16, game.panelSize + 39);
+        int depth = 4;
+        Othello game = new Othello(depth);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.getContentPane().add(new OthelloMenu(frame));
+        frame.pack();
+        frame.setLocationRelativeTo(null);
         frame.setVisible(true);
     }
 
